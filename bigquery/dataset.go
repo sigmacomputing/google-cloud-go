@@ -339,12 +339,10 @@ func (it *TableIterator) fetch(pageSize int, pageToken string) (string, error) {
 	}
 	for _, t := range res.Tables {
 		table := bqToTable(t.TableReference, it.dataset.c)
-		table.meta = &TableMetadataLite{
-			Type:        TableType(t.Type),
-			Description: t.Description,
-		}
+		table.Type = TableType(t.Type)
+		table.Description = t.Description
 		if t.View != nil {
-			table.meta.UseLegacySQL = t.View.UseLegacySql
+			table.UseLegacySQL = t.View.UseLegacySql
 		}
 		it.tables = append(it.tables, table)
 	}

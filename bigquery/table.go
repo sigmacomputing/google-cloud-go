@@ -35,6 +35,7 @@ type Table struct {
 	// The maximum length is 1,024 characters.
 	TableID string
 
+	// These fields are populated only when the Table was created from a table list API call.
 	Description  *string
 	UseLegacySQL *bool
 	Type         *TableType

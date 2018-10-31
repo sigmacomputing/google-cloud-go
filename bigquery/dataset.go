@@ -338,7 +338,14 @@ func (it *TableIterator) fetch(pageSize int, pageToken string) (string, error) {
 		return "", err
 	}
 	for _, t := range res.Tables {
-		it.tables = append(it.tables, bqToTable(t.TableReference, it.dataset.c))
+		table := bqToTable(t.TableReference, it.dataset.c)
+		tableType := TableType(t.Type)
+		table.Type = &tableType
+		table.Description = &t.Description
+		if t.View != nil {
+			table.UseLegacySQL = &t.View.UseLegacySql
+		}
+		it.tables = append(it.tables, table)
 	}
 	return res.NextPageToken, nil
 }

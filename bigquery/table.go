@@ -35,7 +35,14 @@ type Table struct {
 	// The maximum length is 1,024 characters.
 	TableID string
 
-	c *Client
+	c    *Client
+	meta *TableMetadataLite
+}
+
+type TableMetadataLite struct {
+	Description  string
+	UseLegacySQL bool
+	Type         TableType
 }
 
 // TableMetadata contains information about a BigQuery table.
@@ -371,6 +378,27 @@ func (tm *TableMetadata) toBQ() (*bq.Table, error) {
 	return t, nil
 }
 
+func (t *Table) MetadataLite(ctx context.Context) (md *TableMetadataLite, err error) {
+	ctx = trace.StartSpan(ctx, "cloud.google.com/go/bigquery.Table.Metadata")
+	defer func() { trace.EndSpan(ctx, err) }()
+
+	if t.meta != nil {
+		return t.meta, nil
+	}
+
+	req := t.c.bqs.Tables.Get(t.ProjectID, t.DatasetID, t.TableID).Context(ctx)
+	setClientHeader(req.Header())
+	var table *bq.Table
+	err = runWithRetry(ctx, func() (err error) {
+		table, err = req.Do()
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return bqToTableMetadataLite(table), nil
+}
+
 // Metadata fetches the metadata for the table.
 func (t *Table) Metadata(ctx context.Context) (md *TableMetadata, err error) {
 	ctx = trace.StartSpan(ctx, "cloud.google.com/go/bigquery.Table.Metadata")
@@ -387,6 +415,17 @@ func (t *Table) Metadata(ctx context.Context) (md *TableMetadata, err error) {
 		return nil, err
 	}
 	return bqToTableMetadata(table)
+}
+
+func bqToTableMetadataLite(t *bq.Table) *TableMetadataLite {
+	md := &TableMetadataLite{
+		Description: t.Description,
+		Type:        TableType(t.Type),
+	}
+	if t.View != nil {
+		md.UseLegacySQL = t.View.UseLegacySql
+	}
+	return md
 }
 
 func bqToTableMetadata(t *bq.Table) (*TableMetadata, error) {

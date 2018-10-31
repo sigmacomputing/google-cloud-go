@@ -35,9 +35,9 @@ type Table struct {
 	// The maximum length is 1,024 characters.
 	TableID string
 
-	Description  string
-	UseLegacySQL bool
-	Type         TableType
+	Description  *string
+	UseLegacySQL *bool
+	Type         *TableType
 
 	c *Client
 }
